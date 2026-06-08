@@ -32,19 +32,35 @@ def parse_guess(raw: str):
 def check_guess(guess, secret):
     if guess == secret:
         return "Win", "🎉 Correct!"
+    # Try numeric comparison first (handles numeric strings)
+    try:
+        g = int(guess)
+    except Exception:
+        g = guess
 
     try:
-        if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
-        else:
-            return "Too Low", "📉 Go LOWER!"
-    except TypeError:
-        g = str(guess)
-        if g == secret:
+        s = int(secret)
+    except Exception:
+        s = secret
+
+    # If both sides are integers, do numeric comparison
+    if isinstance(g, int) and isinstance(s, int):
+        if g == s:
             return "Win", "🎉 Correct!"
-        if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
+        if g > s:
+            return "Too High", "📉 Go LOWER!"
+        return "Too Low", "📈 Go HIGHER!"
+
+    # Fallback to string comparison for mixed types
+    try:
+        if g == s:
+            return "Win", "🎉 Correct!"
+        if g > s:
+            return "Too High", "📉 Go LOWER!"
+        return "Too Low", "📈 Go HIGHER!"
+    except Exception:
+        # As a last resort, treat as not equal and suggest higher
+        return "Too Low", "📈 Go HIGHER!"
 
 
 def update_score(current_score: int, outcome: str, attempt_number: int):
@@ -132,8 +148,12 @@ with col3:
     show_hint = st.checkbox("Show hint", value=True)
 
 if new_game:
-    st.session_state.attempts = 0
-    st.session_state.secret = random.randint(1, 100)
+    # Reset game state consistently according to current difficulty range
+    st.session_state.attempts = 1
+    st.session_state.secret = random.randint(low, high)
+    st.session_state.score = 0
+    st.session_state.status = "playing"
+    st.session_state.history = []
     st.success("New game started.")
     st.rerun()
 
